@@ -5,9 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>tryRBD</title>
+
+    <!-- basepath -->
+    <script type="text/javascript">
+    mxBasePath = 'src';
+    </script>
+
+    <!-- carregar biblioteca -->
+    <script type="text/javascript" src="mxgraph/javascript/mxClient.js"></script>
+    
+    <!-- codigo -->
+    <script type="text/javascript">
+        function main(container){
+            if(!mxClient.isBrowserSupported()){
+                mxUtils.error('Navegador não suportado.', 200, fasle);
+            }else{
+                var graph = new mxGraph(container);
+                graph.graphHandler.scaleGrid = true;
+				graph.setPanning(true);
+                new mxRubberband(graph);
+                container.style.backgroundImage = 'url(\'mxgraph/javascript/examples/editors/images/grid.gif\')';
+                var parent = graph.getDefaultParent();
+
+                graph.getModel().beginUpdate();
+                try{
+                    var v1 = graph.insertVertex(parent, null, "Hello", 20, 20, 80, 30);
+                    var v2 = graph.insertVertex(parent, null, "World", 200, 150, 80, 30);
+                    var e1 = graph.insertEdge(parent, null, 'mto legal!', v1, v2);
+                }
+                finally{
+                    graph.getModel().endUpdate();
+                }
+            }
+
+        }
+    </script>
 </head>
-<body>
+<body onload="main(document.getElementById('graphContainer'))">
     <h1>Bem-vindo ao tryRBD</h1>
     <a href="mxgraph/javascript/examples/grapheditor/www/index.html">Editor</a>
+
+    <div id="graphContainer" style="overflow: hidden; width: 321px; height: 241px;"></div>
 </body>
 </html>
