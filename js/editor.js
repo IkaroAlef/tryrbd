@@ -5,7 +5,7 @@
 let mxUtilsPath = 'mxgraph/javascript/examples/';
 
 function main(container) {
-	mxConnectionHandler.prototype.connectImage = new mxImage(mxUtilsPath + 'images/connector.gif', 14, 14);
+	//mxConnectionHandler.prototype.connectImage = new mxImage(mxUtilsPath + 'images/connector.gif', 14, 14);
 	// Checks if the browser is supported
 	if (!mxClient.isBrowserSupported()) {
 		// Displays an error message if the browser is not supported.
@@ -33,8 +33,10 @@ function main(container) {
 		// Creates the graph inside the given container
 		var graph = new mxGraph(container);
 
-		// Optional disabling of sizing
+		// desabilitar movimentação
 		graph.setCellsResizable(false);
+		graph.setAllowDanglingEdges(false);
+		graph.setCellsMovable(false);
 
 		// Configures the graph contains to resize and
 		// add a border at the bottom, right
@@ -114,9 +116,9 @@ function main(container) {
 		};
 
 		// Enables tooltips, new connections and panning
-		graph.setPanning(true);
+		//graph.setPanning(true);
 		graph.setTooltips(true);
-		graph.setConnectable(true);
+		//graph.setConnectable(true);
 
 		// Automatically handle parallel edges
 		var layout = new mxParallelEdgeLayout(graph);
