@@ -18,7 +18,11 @@ function main(container) {
 		// Note that these XML nodes will be enclosing the
 		// mxCell nodes for the model cells in the output
 		var doc = mxUtils.createXmlDocument();
+		var bloco1 = new Bloco("nome", 8000, 8);
+		var bloco2 = new Bloco("nome2", 8000, 8);
 
+		var blocos = {bloco1, bloco2};
+		console.log(blocos);
 		var person1 = doc.createElement('Person');
 		person1.setAttribute('firstName', 'Daffy');
 		person1.setAttribute('lastName', 'Duck');
