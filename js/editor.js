@@ -18,21 +18,30 @@ function main(container) {
 		// Note that these XML nodes will be enclosing the
 		// mxCell nodes for the model cells in the output
 		var doc = mxUtils.createXmlDocument();
-		var bloco1 = new Bloco("nome", 8000, 8);
-		var bloco2 = new Bloco("nome2", 8000, 8);
 
-		var blocos = {bloco1, bloco2};
-		console.log(blocos);
-		var person1 = doc.createElement('Person');
-		person1.setAttribute('firstName', 'Daffy');
-		person1.setAttribute('lastName', 'Duck');
+		//var bloco1 = new Bloco("nome", 8000, 8);
+		//var bloco2 = new Bloco("nome2", 8000, 8);
 
-		var person2 = doc.createElement('Person');
-		person2.setAttribute('firstName', 'Bugs');
-		person2.setAttribute('lastName', 'Bunny');
+		//console.log(blocos);
 
-		var relation = doc.createElement('Knows');
-		relation.setAttribute('since', '1985');
+		var inicio = doc.createElement("bloco");
+		inicio.setAttribute('nome', 'INICIO');
+		//inicio.setAttribute('disponibilidade', 'INICIO2');
+
+		var fim = doc.createElement('bloco');
+		fim.setAttribute('nome', 'FIM');
+
+		var bloco1 = doc.createElement('bloco');
+		bloco1.setAttribute('nome', 'b1');
+		bloco1.setAttribute('disponibilidade', '98');
+
+		var conexaoInicio = doc.createElement('conecta');
+		conexaoInicio.setAttribute(inicio.getAttribute('nome'), bloco1.getAttribute('nome'));
+
+		var conexaoFim = doc.createElement('conecta');
+		conexaoFim.setAttribute(bloco1.getAttribute('nome'), fim.getAttribute('nome'));
+
+		var blocos = {bloco1};
 
 		// Creates the graph inside the given container
 		var graph = new mxGraph(container);
@@ -48,10 +57,6 @@ function main(container) {
 		graph.minimumContainerSize = new mxRectangle(0, 0, 500, 380);
 		graph.setBorder(60);
 
-		var style = graph.getStylesheet().getDefaultEdgeStyle();
-		style[mxConstants.STYLE_ROUNDED] = true;
-		style[mxConstants.STYLE_EDGE] = mxEdgeStyle.ElbowConnector;
-
 		graph.alternateEdgeStyle = 'elbow=vertical';
 
 		// Overrides method to disallow edge label editing
@@ -62,15 +67,15 @@ function main(container) {
 		// Overrides method to provide a cell label in the display
 		graph.convertValueToString = function (cell) {
 			if (mxUtils.isNode(cell.value)) {
-				if (cell.value.nodeName.toLowerCase() == 'person') {
-					var firstName = cell.getAttribute('firstName', '');
-					var lastName = cell.getAttribute('lastName', '');
+				if (cell.value.nodeName.toLowerCase() == 'bloco') {
+					var nome = cell.getAttribute('nome', '');
+					var disponibilidade = cell.getAttribute('disponibilidade', '');
 
-					if (lastName != null && lastName.length > 0) {
-						return lastName + ', ' + firstName;
+					if (disponibilidade != null && disponibilidade.length > 0) {
+						return disponibilidade + ', ' + nome;
 					}
 
-					return firstName;
+					return nome;
 				}
 				else if (cell.value.nodeName.toLowerCase() == 'knows') {
 					return cell.value.nodeName + ' (Since '
@@ -86,19 +91,19 @@ function main(container) {
 		var cellLabelChanged = graph.cellLabelChanged;
 		graph.cellLabelChanged = function (cell, newValue, autoSize) {
 			if (mxUtils.isNode(cell.value) &&
-				cell.value.nodeName.toLowerCase() == 'person') {
+				cell.value.nodeName.toLowerCase() == 'bloco') {
 				var pos = newValue.indexOf(' ');
 
-				var firstName = (pos > 0) ? newValue.substring(0,
+				var nome = (pos > 0) ? newValue.substring(0,
 					pos) : newValue;
-				var lastName = (pos > 0) ? newValue.substring(
+				var disponibilidade = (pos > 0) ? newValue.substring(
 					pos + 1, newValue.length) : '';
 
 				// Clones the value for correct undo/redo
 				var elt = cell.value.cloneNode(true);
 
-				elt.setAttribute('firstName', firstName);
-				elt.setAttribute('lastName', lastName);
+				elt.setAttribute('nome', nome);
+				elt.setAttribute('disponibilidade', disponibilidade);
 
 				newValue = elt;
 				autoSize = true;
@@ -111,11 +116,11 @@ function main(container) {
 		var getEditingValue = graph.getEditingValue;
 		graph.getEditingValue = function (cell) {
 			if (mxUtils.isNode(cell.value) &&
-				cell.value.nodeName.toLowerCase() == 'person') {
-				var firstName = cell.getAttribute('firstName', '');
-				var lastName = cell.getAttribute('lastName', '');
+				cell.value.nodeName.toLowerCase() == 'bloco') {
+				var nome = cell.getAttribute('nome', '');
+				var disponibilidade = cell.getAttribute('disponibilidade', '');
 
-				return firstName + ' ' + lastName;
+				return nome + ' ' + disponibilidade;
 			}
 		};
 
@@ -136,7 +141,7 @@ function main(container) {
 
 		var getTooltipForCell = graph.getTooltipForCell;
 		graph.getTooltipForCell = function (cell) {
-			// Adds some relation details for edges
+			// Adds some conexao details for edges
 			if (graph.getModel().isEdge(cell)) {
 				var src = this.getLabel(this.getModel().getTerminal(cell, true));
 				var trg = this.getLabel(this.getModel().getTerminal(cell, false));
@@ -192,9 +197,13 @@ function main(container) {
 		// Adds cells to the model in a single step
 		graph.getModel().beginUpdate();
 		try {
-			var v1 = graph.insertVertex(parent, null, person1, 40, 40, 80, 30);
-			var v2 = graph.insertVertex(parent, null, person2, 200, 150, 80, 30);
-			var e1 = graph.insertEdge(parent, null, relation, v1, v2);
+			var vInicio = graph.insertVertex(parent, null, inicio, 10, 120, 50, 30, 'strokeColor=none;fillColor=none;resizable=0;autosize=1;');
+			var v1 = graph.insertVertex(parent, null, bloco1, 100, 120, 80, 30);
+			var vFim = graph.insertVertex(parent, null, fim, 230, 120, 25, 30, 'strokeColor=none;fillColor=none;resizable=0;autosize=1;');
+			
+			var eInicio = graph.insertEdge(parent, null, conexaoInicio, vInicio, v1);
+			var eFim = graph.insertEdge(parent, null, conexaoFim, v1, vFim);
+			
 		}
 		finally {
 			// Updates the display
@@ -308,7 +317,6 @@ function main(container) {
 					if (change != null) {
 						change();
 					}
-
 					layout.execute(graph.getDefaultParent(), v1);
 				}
 				catch (e) {
@@ -319,7 +327,6 @@ function main(container) {
 					var morph = new mxMorphing(graph);
 					morph.addListener(mxEvent.DONE, mxUtils.bind(this, function () {
 						graph.getModel().endUpdate();
-
 						if (post != null) {
 							post();
 						}
@@ -382,10 +389,10 @@ function main(container) {
 			}, subSerie);
 
 			//Configuração do menu add bloco simples em paralelo
-			menu.addItem('Simples', null, addParaleloSimples, subParalelo);
+			//menu.addItem('Simples', null, addParaleloSimples, subParalelo);
 
 			//Configuração do menu add bloco k-out-of-n em paralelo
-			menu.addItem('K-out-of-N', null, addParaleloKN, subParalelo);
+			//menu.addItem('K-out-of-N', null, addParaleloKN, subParalelo);
 
 		}
 	};

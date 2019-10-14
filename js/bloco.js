@@ -1,8 +1,9 @@
 class Bloco{
-    constructor(nome, mttf, mttr){
+    constructor(nome, disponibilidade, mttf, mttr){
         this.mttf=mttf;
         this.mttr=mttr;
         this.nome=nome;
+        this.disponibilidade=disponibilidade;
     }
 
     setNome(nome){
@@ -17,5 +18,7 @@ class Bloco{
         this.Mttr=mttr;
     }
 
-    
+    setDisponibilidade(disponibilidade){
+        this.disponibilidade=disponibilidade;
+    }
 }
