@@ -19,14 +19,8 @@ function main(container) {
 		// mxCell nodes for the model cells in the output
 		var doc = mxUtils.createXmlDocument();
 
-		//var bloco1 = new Bloco("nome", 8000, 8);
-		//var bloco2 = new Bloco("nome2", 8000, 8);
-
-		//console.log(blocos);
-
 		var inicio = doc.createElement("bloco");
 		inicio.setAttribute('nome', 'INICIO');
-		//inicio.setAttribute('disponibilidade', 'INICIO2');
 
 		var fim = doc.createElement('bloco');
 		fim.setAttribute('nome', 'FIM');
@@ -41,12 +35,13 @@ function main(container) {
 		var conexaoFim = doc.createElement('conecta');
 		conexaoFim.setAttribute(bloco1.getAttribute('nome'), fim.getAttribute('nome'));
 
-		var blocos = {bloco1};
+		var blocos = [new Bloco({nome:bloco1.getAttribute("nome"), disponibilidade:bloco1.getAttribute('disponibilidade')})];
+		console.log(blocos);
 
 		// Creates the graph inside the given container
 		var graph = new mxGraph(container);
-
-		// desabilitar movimentação
+		
+		// desabilitar movimentação dos elementos
 		graph.setCellsResizable(false);
 		graph.setAllowDanglingEdges(false);
 		graph.setCellsMovable(false);
@@ -159,7 +154,7 @@ function main(container) {
 
 		// Installs a popupmenu handler using local function (see below).
 		graph.popupMenuHandler.factoryMethod = function (menu, cell, evt) {
-			console.log(cell);
+			//console.log(cell);
 			return createPopupMenu(graph, menu, cell, evt);
 		};
 
@@ -373,6 +368,8 @@ function main(container) {
 					var e1 = graph.insertEdge(parent, null, '', cell, v2); //conectar o bloco selecionado com o novo bloco
 					var e2 = graph.insertEdge(parent, null, '', v2, cell.edges[1].target); //ligar o novo bloco com "target" do bloco selecionado
 					graph.getModel().remove(cell.edges[1]); //remover a conexão antiga do bloco
+					blocos.push(new Bloco({nome:b.getAttribute("nome"), disponibilidade:b.getAttribute('disponibilidade')}));
+					console.log(blocos);
 
 				}, function () {
 					graph.scrollCellToVisible(v2);
