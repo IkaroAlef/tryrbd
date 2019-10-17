@@ -159,6 +159,7 @@ function main(container) {
 
 		// Installs a popupmenu handler using local function (see below).
 		graph.popupMenuHandler.factoryMethod = function (menu, cell, evt) {
+			console.log(cell);
 			return createPopupMenu(graph, menu, cell, evt);
 		};
 
@@ -356,17 +357,23 @@ function main(container) {
 			let subSerie = menu.addItem('Série', null, null, subInserir);
 			let subParalelo = menu.addItem('Paralelo', null, null, subInserir);
 
-			//Configuração do menu add bloco simples em série
+			//Configuração do menu "add bloco simples em série"
 			menu.addItem('Simples', null, function () {
 				graph.clearSelection();
 				var geo = graph.getCellGeometry(cell);
 
 				var v2;
+				var b = doc.createElement('bloco');
+				b.setAttribute('nome', 'bloco');
+				b.setAttribute('disponibilidade', '0');
 
 				executeLayout(function () {
-					v2 = graph.insertVertex(parent, null, 'World!', geo.x, geo.y, 80, 30);
+					v2 = graph.insertVertex(parent, null, b, geo.x, geo.y, 80, 30);
 					graph.view.refresh(v2);
-					var e1 = graph.insertEdge(parent, null, '', cell, v2);
+					var e1 = graph.insertEdge(parent, null, '', cell, v2); //conectar o bloco selecionado com o novo bloco
+					var e2 = graph.insertEdge(parent, null, '', v2, cell.edges[1].target); //ligar o novo bloco com "target" do bloco selecionado
+					graph.getModel().remove(cell.edges[1]); //remover a conexão antiga do bloco
+
 				}, function () {
 					graph.scrollCellToVisible(v2);
 				});
