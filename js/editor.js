@@ -19,10 +19,10 @@ function main(container) {
 		// mxCell nodes for the model cells in the output
 		var doc = mxUtils.createXmlDocument();
 
-		var inicio = doc.createElement("bloco");
+		var inicio = doc.createElement("inicio");
 		inicio.setAttribute('nome', 'INICIO');
 
-		var fim = doc.createElement('bloco');
+		var fim = doc.createElement('fim');
 		fim.setAttribute('nome', 'FIM');
 
 		var bloco1 = doc.createElement('bloco');
@@ -34,9 +34,6 @@ function main(container) {
 
 		var conexaoFim = doc.createElement('conecta');
 		conexaoFim.setAttribute(bloco1.getAttribute('nome'), fim.getAttribute('nome'));
-
-		var blocos = [new Bloco({nome:bloco1.getAttribute("nome"), disponibilidade:bloco1.getAttribute('disponibilidade')})];
-		console.log(blocos);
 
 		// Creates the graph inside the given container
 		var graph = new mxGraph(container);
@@ -67,18 +64,21 @@ function main(container) {
 					var disponibilidade = cell.getAttribute('disponibilidade', '');
 
 					if (disponibilidade != null && disponibilidade.length > 0) {
-						return disponibilidade + ', ' + nome;
+						return nome + ', ' + disponibilidade;
 					}
-
 					return nome;
+				}
+				else if (cell.value.nodeName.toLowerCase() == 'inicio') {
+					return cell.getAttribute('nome');
+				}
+				else if (cell.value.nodeName.toLowerCase() == 'fim') {
+					return cell.getAttribute('nome');
 				}
 				else if (cell.value.nodeName.toLowerCase() == 'knows') {
 					return cell.value.nodeName + ' (Since '
 						+ cell.getAttribute('since', '') + ')';
 				}
-
 			}
-
 			return '';
 		};
 
@@ -165,6 +165,9 @@ function main(container) {
 			mxUtils.popup(mxUtils.getPrettyXml(node), true);
 		}));
 
+		document.body.appendChild(mxUtils.button('Calcular', function (){
+			calcular(graph)}));
+
 		// Changes the style for match the markup
 		// Creates the default style for vertices
 		var style = graph.getStylesheet().getDefaultVertexStyle();
@@ -214,6 +217,21 @@ function main(container) {
 
 		selectionChanged(graph);
 	}
+
+	function calcular(graph){
+			var encoder = new mxCodec();
+			var node = encoder.encode(graph.getModel());
+			var text = mxUtils.getXml(node);		
+			text = mxUtils.parseXml(text);
+			let t = text.getElementsByTagName('bloco');
+			let produto = 1;
+			for(let i=0; i<t.length; i++){
+				produto = produto * t[i].getAttribute('disponibilidade')/100;
+			}
+			mxUtils.popup("A disponibilidade é "+produto*100+"%.", true);
+			console.log(produto);
+		};
+
 
 	/**
 	 * Updates the properties panel
@@ -272,7 +290,7 @@ function main(container) {
 						cell, attribute.nodeName,
 						newValue);
 					graph.getModel().execute(edit);
-					graph.updateCellSize(cell);
+					//graph.updateCellSize(cell);
 				}
 				finally {
 					graph.getModel().endUpdate();
@@ -368,9 +386,6 @@ function main(container) {
 					var e1 = graph.insertEdge(parent, null, '', cell, v2); //conectar o bloco selecionado com o novo bloco
 					var e2 = graph.insertEdge(parent, null, '', v2, cell.edges[1].target); //ligar o novo bloco com "target" do bloco selecionado
 					graph.getModel().remove(cell.edges[1]); //remover a conexão antiga do bloco
-					blocos.push(new Bloco({nome:b.getAttribute("nome"), disponibilidade:b.getAttribute('disponibilidade')}));
-					console.log(blocos);
-
 				}, function () {
 					graph.scrollCellToVisible(v2);
 				});
