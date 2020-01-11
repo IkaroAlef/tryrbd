@@ -1,14 +1,8 @@
-// Program starts here. Creates a sample graph in the
-// DOM node with the specified ID. This function is invoked
-// from the onLoad event handler of the document (see below).
-
 let mxUtilsPath = 'mxgraph/javascript/examples/';
 
 function main(container) {
-	//mxConnectionHandler.prototype.connectImage = new mxImage(mxUtilsPath + 'images/connector.gif', 14, 14);
 	// Checks if the browser is supported
 	if (!mxClient.isBrowserSupported()) {
-		// Displays an error message if the browser is not supported.
 		mxUtils.error('Browser is not supported!', 200, false);
 	}
 	else {
@@ -35,7 +29,7 @@ function main(container) {
 		var conexaoFim = doc.createElement('conecta');
 		conexaoFim.setAttribute(bloco1.getAttribute('nome'), fim.getAttribute('nome'));
 
-		// Creates the graph inside the given container
+		// cria o gráfico dentro do container dado
 		var graph = new mxGraph(container);
 		
 		// desabilitar movimentação dos elementos
@@ -43,8 +37,6 @@ function main(container) {
 		graph.setAllowDanglingEdges(false);
 		graph.setCellsMovable(false);
 
-		// Configures the graph contains to resize and
-		// add a border at the bottom, right
 		graph.setResizeContainer(true);
 		graph.minimumContainerSize = new mxRectangle(0, 0, 500, 380);
 		graph.setBorder(60);
@@ -56,7 +48,7 @@ function main(container) {
 			return !this.getModel().isEdge(cell);
 		};
 
-		// Overrides method to provide a cell label in the display
+		// método override para mostrar um label no bloco
 		graph.convertValueToString = function (cell) {
 			if (mxUtils.isNode(cell.value)) {
 				if (cell.value.nodeName.toLowerCase() == 'bloco') {
@@ -103,11 +95,10 @@ function main(container) {
 				newValue = elt;
 				autoSize = true;
 			}
-
 			cellLabelChanged.apply(this, arguments);
 		};
 
-		// Overrides method to create the editing value
+		// metodo Override para criar valores editaveis
 		var getEditingValue = graph.getEditingValue;
 		graph.getEditingValue = function (cell) {
 			if (mxUtils.isNode(cell.value) &&
@@ -119,20 +110,8 @@ function main(container) {
 			}
 		};
 
-		// Enables tooltips, new connections and panning
-		//graph.setPanning(true);
+		// Enables tooltips
 		graph.setTooltips(true);
-		//graph.setConnectable(true);
-
-		// Automatically handle parallel edges
-		var layout = new mxParallelEdgeLayout(graph);
-		var layoutMgr = new mxLayoutManager(graph);
-
-		layoutMgr.getLayout = function (cell) {
-			if (cell.getChildCount() > 0) {
-				return layout;
-			}
-		};
 
 		var getTooltipForCell = graph.getTooltipForCell;
 		graph.getTooltipForCell = function (cell) {
@@ -154,7 +133,6 @@ function main(container) {
 
 		// Installs a popupmenu handler using local function (see below).
 		graph.popupMenuHandler.factoryMethod = function (menu, cell, evt) {
-			//console.log(cell);
 			return createPopupMenu(graph, menu, cell, evt);
 		};
 
@@ -218,6 +196,7 @@ function main(container) {
 		selectionChanged(graph);
 	}
 
+	// método para calcular a disponibilidade do RBD
 	function calcular(graph){
 			var encoder = new mxCodec();
 			var node = encoder.encode(graph.getModel());
@@ -320,51 +299,74 @@ function main(container) {
 		}
 	}
 
+function addChild(graph, cell)
+{
+	var model = graph.getModel();
+	var parent = graph.getDefaultParent();
+	var vertex;
+	var geo = graph.getCellGeometry(cell);
+	var b = doc.createElement('bloco');
+	b.setAttribute('nome', 'bloco');
+	b.setAttribute('disponibilidade', '0');
+
+	model.beginUpdate();
+	try{
+		vertex = graph.insertVertex(parent, null, b, geo.x, geo.y, 80, 30);
+		var geometry = model.getGeometry(vertex);
+
+		// Updates the geometry of the vertex with the
+		// preferred size computed in the graph
+		var size = graph.getPreferredSizeForCell(vertex);
+		geometry.width = size.width;
+		geometry.height = size.height;
+
+		//conectar o bloco selecionado com o novo bloco
+		let e1 = graph.insertEdge(parent, null, '', cell, vertex);
+
+		//ligar o novo bloco com "target" do bloco selecionado
+		let e2 = graph.insertEdge(parent, null, '', vertex, cell.edges[1].target);
+		
+		//remover a conexão antiga do bloco
+		graph.getModel().remove(cell.edges[1]); 
+		var layout = new mxHierarchicalLayout(graph, mxConstants.DIRECTION_WEST);
+		//funcao adaptada para criar animação dos blocos se movendo ao adicionar um novo bloco
+		var executeLayout = function (change, post) {
+			graph.getModel().beginUpdate();
+			try {
+				if (change != null) {
+					change();
+				}
+				layout.execute(graph.getDefaultParent());
+			}
+			catch (e) {
+				throw e;
+			}
+			finally {
+				// New API for animating graph layout results asynchronously
+				var morph = new mxMorphing(graph);
+				morph.addListener(mxEvent.DONE, mxUtils.bind(this, function () {
+					graph.getModel().endUpdate();
+					if (post != null) {
+						post();
+					}
+				}));
+
+				morph.startAnimation();
+			}
+		};
+		executeLayout();
+	}
+	finally
+	{
+		model.endUpdate();
+	}
+	
+	return vertex;
+};
+
 	// Função dos submenus
 	function createPopupMenu(graph, menu, cell, evt) {
 		if (cell != null) {
-
-			var layout = new mxHierarchicalLayout(graph, mxConstants.DIRECTION_WEST);
-			var executeLayout = function (change, post) {
-				graph.getModel().beginUpdate();
-				try {
-					if (change != null) {
-						change();
-					}
-					layout.execute(graph.getDefaultParent(), v1);
-				}
-				catch (e) {
-					throw e;
-				}
-				finally {
-					// New API for animating graph layout results asynchronously
-					var morph = new mxMorphing(graph);
-					morph.addListener(mxEvent.DONE, mxUtils.bind(this, function () {
-						graph.getModel().endUpdate();
-						if (post != null) {
-							post();
-						}
-					}));
-
-					morph.startAnimation();
-				}
-			};
-
-			var edgeHandleConnect = mxEdgeHandler.prototype.connect;
-			mxEdgeHandler.prototype.connect = function (edge, terminal, isSource, isClone, me) {
-				edgeHandleConnect.apply(this, arguments);
-				executeLayout();
-			};
-
-			graph.resizeCell = function () {
-				mxGraph.prototype.resizeCell.apply(this, arguments);
-
-				executeLayout();
-			};
-
-			graph.connectionHandler.addListener(mxEvent.CONNECT, function () {
-				executeLayout();
-			});
 
 			let subInserir = menu.addItem('Inserir bloco', null, null); //submenu inserir
 			let subSerie = menu.addItem('Série', null, null, subInserir);
@@ -372,23 +374,7 @@ function main(container) {
 
 			//Configuração do menu "add bloco simples em série"
 			menu.addItem('Simples', null, function () {
-				graph.clearSelection();
-				var geo = graph.getCellGeometry(cell);
-
-				var v2;
-				var b = doc.createElement('bloco');
-				b.setAttribute('nome', 'bloco');
-				b.setAttribute('disponibilidade', '0');
-
-				executeLayout(function () {
-					v2 = graph.insertVertex(parent, null, b, geo.x, geo.y, 80, 30);
-					graph.view.refresh(v2);
-					var e1 = graph.insertEdge(parent, null, '', cell, v2); //conectar o bloco selecionado com o novo bloco
-					var e2 = graph.insertEdge(parent, null, '', v2, cell.edges[1].target); //ligar o novo bloco com "target" do bloco selecionado
-					graph.getModel().remove(cell.edges[1]); //remover a conexão antiga do bloco
-				}, function () {
-					graph.scrollCellToVisible(v2);
-				});
+				addChild(graph, cell);
 			}, subSerie);
 
 			//Configuração do menu add bloco k-out-of-n em série
