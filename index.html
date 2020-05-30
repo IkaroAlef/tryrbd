@@ -1,0 +1,107 @@
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="apple-touch-icon" href="icon.png">
+  <!-- Place favicon.ico in the root directory -->
+
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel='stylesheet' href='js/vendor/extensions/DataInspector.css' />
+
+  <script src="js/vendor/go-debug.js"></script>
+  <script src="js/vendor/extensions/DataInspector.js"></script>
+
+  <meta name="theme-color" content="#fafafa">
+
+  <style type="text/css">
+    .draggable {
+      display: inline-block;
+      vertical-align: top;
+      border: 4px solid #BBB;
+      border-radius: 4px;
+      background-color: #F5F5F5;
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 500;
+    }
+
+    .handle {
+      background-color: lightblue;
+      cursor: move;
+      text-align: center;
+      font: bold 12px sans-serif;
+    }
+
+    #infoDraggable {
+      font: 12px helvetica, sans-serif;
+      min-width: 213px;
+    }
+
+    #myInfo {
+      width: 100%;
+      overflow: hidden;
+    }
+
+    #myPaletteDiv {
+      background-color: #F5F5F5;
+      width: 100%;
+      height: 100%;
+    }
+
+    /*
+One simple way of making a div fill its space,
+with allowances for the title (top) and the resize handle (bottom)
+*/
+    #paletteContainer {
+      position: absolute;
+      bottom: 14px;
+      left: 0px;
+      right: 0px;
+      top: 14px;
+    }
+  </style>
+</head>
+
+<body onload="initDiagram()">
+  <!--[if IE]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.</p>
+  <![endif]-->
+
+  <!-- Add your site or application content here -->
+  <p>Hello world! This is HTML5.</p>
+  <div id="infoDraggable" class="draggable"
+    style="display: inline-block; vertical-align: top; padding: 5px; top: 20px; left: 380px;">
+    <div id="infoDraggableHandle" class="handle">Info</div>
+    <div>
+      <div id="myInfo"></div>
+    </div>
+  </div>
+  <div id="myDiagramDiv" style="width:800px; height:400px; background-color: #DAE4E4;"></div>
+
+
+  <script src="js/vendor/modernizr-3.8.0.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+    integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+    integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
+  <script>window.jQuery || document.write('<script src="js/vendor/jquery-3.4.1.min.js"><\/script>')</script>
+  <script src="js/plugins.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- Google Analytics: change UA-XXXXX-Y to be your site's ID. -->
+  <script>
+    window.ga = function () { ga.q.push(arguments) }; ga.q = []; ga.l = +new Date;
+    ga('create', 'UA-XXXXX-Y', 'auto'); ga('set', 'transport', 'beacon'); ga('send', 'pageview')
+  </script>
+  <script src="https://www.google-analytics.com/analytics.js" async></script>
+</body>
+
+</html>
