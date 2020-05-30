@@ -25,6 +25,27 @@ function initDiagram() {
     }),
   });
 
+  $(() => {
+    $('#infoDraggable').draggable({ handle: '#infoDraggableHandle' });
+
+    const inspector = new go.Inspector('myInfo', diagram, {
+      properties: {
+        // key would be automatically added for nodes, but we want to declare it read-only also:
+        key: { readOnly: true, show: go.Inspector.showIfPresent },
+        // fill and stroke would be automatically added for nodes, but we want to declare it a color also:
+        fill: { show: go.Inspector.showIfPresent, type: 'color' },
+        stroke: { show: go.Inspector.showIfPresent, type: 'color' },
+      },
+    });
+  });
+
+  // On selection changed, make sure infoDraggable will resize as necessary
+  diagram.addDiagramListener('ChangedSelection', (diagramEvent) => {
+    const idrag = document.getElementById('infoDraggable');
+    idrag.style.width = '';
+    idrag.style.height = '';
+  });
+
   // define a simple Node template
   diagram.nodeTemplate = $(
     go.Node,
@@ -100,7 +121,24 @@ export default function Teste() {
         ]}
         onModelChange={handleModelChange}
       />
-      ...
+      <div
+        id="infoDraggable"
+        className="draggable"
+        style={{
+          display: 'inlineBlock',
+          verticalAlign: 'top',
+          padding: 5,
+          top: 20,
+          left: 380,
+        }}
+      >
+        <div id="infoDraggableHandle" className="handle">
+          Info
+        </div>
+        <div>
+          <div id="myInfo" />
+        </div>
+      </div>
     </div>
   );
 }
