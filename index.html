@@ -20,54 +20,6 @@
 
   <meta name="theme-color" content="#fafafa">
 
-  <style type="text/css">
-    .draggable {
-      display: inline-block;
-      vertical-align: top;
-      border: 4px solid #BBB;
-      border-radius: 4px;
-      background-color: #F5F5F5;
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      z-index: 500;
-    }
-
-    .handle {
-      background-color: lightblue;
-      cursor: move;
-      text-align: center;
-      font: bold 12px sans-serif;
-    }
-
-    #infoDraggable {
-      font: 12px helvetica, sans-serif;
-      min-width: 213px;
-    }
-
-    #myInfo {
-      width: 100%;
-      overflow: hidden;
-    }
-
-    #myPaletteDiv {
-      background-color: #F5F5F5;
-      width: 100%;
-      height: 100%;
-    }
-
-    /*
-One simple way of making a div fill its space,
-with allowances for the title (top) and the resize handle (bottom)
-*/
-    #paletteContainer {
-      position: absolute;
-      bottom: 14px;
-      left: 0px;
-      right: 0px;
-      top: 14px;
-    }
-  </style>
 </head>
 
 <body onload="initDiagram()">
@@ -84,8 +36,30 @@ with allowances for the title (top) and the resize handle (bottom)
       <div id="myInfo"></div>
     </div>
   </div>
-  <div id="myDiagramDiv" style="width:800px; height:400px; background-color: #DAE4E4;"></div>
 
+  <div style="position: relative;">
+    <div id="myDiagramDiv" style="width:800px; height:400px; background-color: #DAE4E4;"></div>
+    <ul id="contextMenu" class="menu">
+      <li id="cut" class="menu-item" onclick="cxcommand(event)">Cortar</li>
+      <li id="copy" class="menu-item" onclick="cxcommand(event)">Copiar</li>
+      <li id="paste" class="menu-item" onclick="cxcommand(event)">Colar</li>
+      <li id="delete" class="menu-item" onclick="cxcommand(event)">Deletar</li>
+      <li id="add" class="menu-item" onclick="cxcommand(event)">Inserir bloco
+        <ul class="menu">
+          <li class="menu-item" style="background-color: #f38181;" onclick="addNodeAndLink('serie')">em Série</li>
+          <li class="menu-item" style="background-color: #eaffd0;" onclick="addNodeAndLink('paralel')">em Paralelo</li>
+        </ul>
+      </li>
+      <li id="color" class="menu-item">Color
+        <ul class="menu">
+          <li class="menu-item" style="background-color: #f38181;" onclick="cxcommand(event, 'color')">Red</li>
+          <li class="menu-item" style="background-color: #eaffd0;" onclick="cxcommand(event, 'color')">Green</li>
+          <li class="menu-item" style="background-color: #95e1d3;" onclick="cxcommand(event, 'color')">Blue</li>
+          <li class="menu-item" style="background-color: #fce38a;" onclick="cxcommand(event, 'color')">Yellow</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
 
   <script src="js/vendor/modernizr-3.8.0.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.4.1.min.js"
