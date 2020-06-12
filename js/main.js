@@ -8,41 +8,24 @@ function initDiagram() {
   // This is the actual HTML context menu:
   var cxElement = document.getElementById("contextMenu");
 
-  // Since we have only one main element, we don't have to declare a hide method,
-  // we can set mainElement and GoJS will hide it automatically
-  var myContextMenu = GO(go.HTMLInfo, {
-    show: showContextMenu,
-    hide: hideContextMenu,
-  });
-
   var myModel = GO(go.GraphLinksModel);
   myModel.nodeDataArray = [
     { key: "Inicio", category: "simple" },
     { key: "Fim", category: "simple" },
-    { key: "Alpha", reliability: 0 },
-    { key: "Beta", reliability: 0 },
-    { key: "Gamma", reliability: 0 },
-    { key: "India", reliability: 0 },
-    { key: "Zeta", reliability: 0 },
+    { key: "1", text: "Alpha", reliability: 0 },
   ];
   myModel.linkDataArray = [
-    { from: "Inicio", to: "Alpha" },
-    { from: "Alpha", to: "Beta" },
-    { from: "Beta", to: "Gamma" },
-    { from: "Beta", to: "India" },
-    { from: "India", to: "Zeta" },
-    { from: "Gamma", to: "Zeta" },
-    { from: "Zeta", to: "Fim" },
+    { from: "Inicio", to: "1" },
+    { from: "1", to: "Fim" },
   ];
 
   myDiagram.layout = GO(go.TreeLayout, { layerSpacing: 35 });
   myDiagram.model = myModel;
-  myDiagram.contextMenu = myContextMenu;
 
   var blockTemplate = GO(
     go.Node,
     "Vertical",
-    { locationSpot: go.Spot.Center, contextMenu: myContextMenu },
+    { locationSpot: go.Spot.Center },
     new go.Binding("location", "loc"),
     GO(
       go.Shape,
@@ -55,18 +38,57 @@ function initDiagram() {
       go.TextBlock,
       "default text",
       { margin: 5 },
-      new go.Binding("text", "key")
+      new go.Binding("text", "text")
     )
   );
 
-  var simpletemplate = GO(
+  blockTemplate.contextMenu = GO(
+    "ContextMenu",
+    GO("ContextMenuButton", GO(go.TextBlock, "Adicionar Bloco"), {
+      click: function (e, obj) {
+        addNodeAndLink(e, obj, "serie");
+      },
+    }),
+    GO("ContextMenuButton", GO(go.TextBlock, "Copiar"), {
+      click: function (e, obj) {
+        e.diagram.commandHandler.copySelection();
+      },
+    }),
+    GO("ContextMenuButton", GO(go.TextBlock, "Colar"), {
+      click: function (e, obj) {
+        e.diagram.commandHandler.pasteSelection(
+          e.diagram.toolManager.contextMenuTool.mouseDownPoint
+        );
+      },
+    }),
+    GO("ContextMenuButton", GO(go.TextBlock, "Cortar"), {
+      click: function (e, obj) {
+        e.diagram.commandHandler.cutSelection();
+      },
+    }),
+    GO(
+      "ContextMenuButton",
+      GO(go.TextBlock, "Delete"),
+      {
+        click: function (e, obj) {
+          e.diagram.commandHandler.deleteSelection();
+        },
+      },
+      new go.Binding("visible", "", function (o) {
+        return o.diagram && o.diagram.commandHandler.canDeleteSelection();
+      }).ofObject()
+    )
+  );
+
+  var simpleTemplate = GO(
     go.Node,
     "Auto",
     GO(go.TextBlock, new go.Binding("text", "key"))
   );
 
   var templMap = new go.Map();
-  templMap.add("simple", simpletemplate);
+
+  templMap.add("simple", simpleTemplate);
   templMap.add("", blockTemplate);
 
   myDiagram.nodeTemplateMap = templMap;
@@ -103,55 +125,8 @@ function initDiagram() {
     },
     false
   );
-
-  function hideCX() {
-    if (myDiagram.currentTool instanceof go.ContextMenuTool) {
-      myDiagram.currentTool.doCancel();
-    }
-  }
-
-  function showContextMenu(obj, diagram, tool) {
-    // Show only the relevant buttons given the current state.
-    var cmd = diagram.commandHandler;
-    var hasMenuItem = false;
-    function maybeShowItem(elt, pred) {
-      if (pred) {
-        elt.style.display = "block";
-        hasMenuItem = true;
-      } else {
-        elt.style.display = "none";
-      }
-    }
-    maybeShowItem(document.getElementById("cut"), cmd.canCutSelection());
-    maybeShowItem(document.getElementById("copy"), cmd.canCopySelection());
-    maybeShowItem(
-      document.getElementById("paste"),
-      cmd.canPasteSelection(diagram.toolManager.contextMenuTool.mouseDownPoint)
-    );
-    maybeShowItem(document.getElementById("delete"), cmd.canDeleteSelection());
-    maybeShowItem(document.getElementById("color"), obj !== null);
-
-    // Now show the whole context menu element
-    if (hasMenuItem) {
-      cxElement.classList.add("show-menu");
-      // we don't bother overriding positionContextMenu, we just do it here:
-      var mousePt = diagram.lastInput.viewPoint;
-      cxElement.style.left = mousePt.x + 5 + "px";
-      cxElement.style.top = mousePt.y + "px";
-    }
-
-    // Optional: Use a `window` click listener with event capture to
-    //           remove the context menu if the user clicks elsewhere on the page
-    window.addEventListener("click", hideCX, true);
-  }
-
-  function hideContextMenu() {
-    cxElement.classList.remove("show-menu");
-    // Optional: Use a `window` click listener with event capture to
-    //           remove the context menu if the user clicks elsewhere on the page
-    window.removeEventListener("click", hideCX, true);
-  }
 }
+// end initDiagram
 
 // This is the general menu command handler, parameterized by the name of the command.
 function cxcommand(event, val) {
@@ -177,58 +152,60 @@ function cxcommand(event, val) {
       changeColor(diagram, color);
       break;
     }
-    case "add": {
-      addNodeAndLink(diagram);
-      break;
-    }
   }
   diagram.currentTool.stopTool();
 }
 
-function addNodeAndLink(type) {
+function addNodeAndLink(e, obj, type) {
   var model = myDiagram.model;
+  var fromNode = obj.part;
+  var fromData = fromNode.data;
   switch (type) {
     case "serie":
       myDiagram.startTransaction("addSerie");
-      newBlock = { reliability: 0 };
-      model.addNodeData(newBlock);
+
+      var p = fromNode.location.copy();
+      p.x += myDiagram.toolManager.draggingTool.gridSnapCellSize.width;
+      var toData = {
+        text: "Bloco",
+        reliability: 0,
+        loc: go.Point.stringify(p),
+      };
+      model.addNodeData(toData);
+
+      var nextNodeKey;
+      var it = myDiagram.findLinksByExample({ from: fromNode.key });
+      while (it.next()) nextNodeKey = it.value.data.to;
+      //console.log(fromNode.key);
+
+      var linkdata = {
+        from: model.getKeyForNodeData(fromData),
+        to: model.getKeyForNodeData(toData),
+      };
+      var linknext = {
+        from: model.getKeyForNodeData(toData),
+        to: nextNodeKey,
+      };
+      model.addLinkData(linkdata);
+      model.addLinkData(linknext);
+
+      // select the new Node
+      var newnode = myDiagram.findNodeForData(toData);
+      myDiagram.select(newnode);
+      // snap the new node to a valid location
+      newnode.location = myDiagram.toolManager.draggingTool.computeMove(
+        newnode,
+        p
+      );
+      // then account for any overlap
+      //shiftNodesToEmptySpaces();
       myDiagram.commitTransaction("addSerie");
 
       break;
     case "paralel":
-      console.log("paralel", diagram.selection);
+      console.log("paralel", myDiagram.selection);
       break;
   }
-  /*var fromNode = obj.part;
-  var diagram = myDiagram;
-  diagram.startTransaction("Add State");
-  // get the node data for which the user clicked the button
-  var fromData = fromNode.data;
-  // create a new "State" data object, positioned off to the right of the fromNode
-  var p = fromNode.location.copy();
-  p.x += diagram.toolManager.draggingTool.gridSnapCellSize.width;
-  var toData = {
-    text: "new",
-    loc: go.Point.stringify(p),
-  };
-  // add the new node data to the model
-  var model = diagram.model;
-  model.addNodeData(toData);
-  // create a link data from the old node data to the new node data
-  var linkdata = {
-    from: model.getKeyForNodeData(fromData),
-    to: model.getKeyForNodeData(toData),
-  };
-  // and add the link data to the model
-  model.addLinkData(linkdata);
-  // select the new Node
-  var newnode = diagram.findNodeForData(toData);
-  diagram.select(newnode);
-  // snap the new node to a valid location
-  newnode.location = diagram.toolManager.draggingTool.computeMove(newnode, p);
-  // then account for any overlap
-  shiftNodesToEmptySpaces();
-  diagram.commitTransaction("Add State"); */
 }
 
 // A custom command, for changing the color of the selected node(s).
