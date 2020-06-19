@@ -42,11 +42,23 @@ function initDiagram() {
     )
   );
 
+  myDiagram.linkTemplate = GO(
+    go.Link,
+    { routing: go.Link.AvoidsNodes, corner: 10 }, // rounded corners
+    GO(go.Shape),
+    GO(go.Shape, { toArrow: "Standard" })
+  );
+
   blockTemplate.contextMenu = GO(
     "ContextMenu",
-    GO("ContextMenuButton", GO(go.TextBlock, "Adicionar Bloco"), {
+    GO("ContextMenuButton", GO(go.TextBlock, "Adicionar Bloco em série"), {
       click: function (e, obj) {
         addNodeAndLink(e, obj, "serie");
+      },
+    }),
+    GO("ContextMenuButton", GO(go.TextBlock, "Adicionar Bloco em paralelo"), {
+      click: function (e, obj) {
+        addNodeAndLink(e, obj, "paralel");
       },
     }),
     GO("ContextMenuButton", GO(go.TextBlock, "Copiar"), {
@@ -203,7 +215,49 @@ function addNodeAndLink(e, obj, type) {
 
       break;
     case "paralel":
-      console.log("paralel", myDiagram.selection);
+      myDiagram.startTransaction("addSerie");
+
+      var p = fromNode.location.copy();
+      p.x += myDiagram.toolManager.draggingTool.gridSnapCellSize.width;
+      var toData = {
+        text: "Bloco",
+        reliability: 0,
+        loc: go.Point.stringify(p),
+      };
+      model.addNodeData(toData);
+
+      var nextNodeKey;
+      var prevNodeKey;
+      var itFrom = myDiagram.findLinksByExample({ from: fromNode.key });
+      var itTo = myDiagram.findLinksByExample({ to: fromNode.key });
+
+      while (itFrom.next()) nextNodeKey = itFrom.value.data.to;
+
+      while (itTo.next()) prevNodeKey = itTo.value.data.from;
+      //console.log(fromNode.key);
+
+      var linkdata = {
+        from: prevNodeKey,
+        to: model.getKeyForNodeData(toData),
+      };
+      var linknext = {
+        from: model.getKeyForNodeData(toData),
+        to: nextNodeKey,
+      };
+      model.addLinkData(linkdata);
+      model.addLinkData(linknext);
+
+      // select the new Node
+      var newnode = myDiagram.findNodeForData(toData);
+      myDiagram.select(newnode);
+      // snap the new node to a valid location
+      newnode.location = myDiagram.toolManager.draggingTool.computeMove(
+        newnode,
+        p
+      );
+      // then account for any overlap
+      //shiftNodesToEmptySpaces();
+      myDiagram.commitTransaction("addSerie");
       break;
   }
 }
