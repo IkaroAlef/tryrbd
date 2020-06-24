@@ -187,7 +187,10 @@ function addNodeAndLink(e, obj, type) {
 
       var nextNodeKey;
       var it = myDiagram.findLinksByExample({ from: fromNode.key });
-      while (it.next()) nextNodeKey = it.value.data.to;
+      while (it.next()) {
+        nextNodeKey = it.value.data.to;
+        model.removeLinkData(it.value.data);
+      }
       //console.log(fromNode.key);
 
       var linkdata = {
@@ -200,7 +203,6 @@ function addNodeAndLink(e, obj, type) {
       };
       model.addLinkData(linkdata);
       model.addLinkData(linknext);
-
       // select the new Node
       var newnode = myDiagram.findNodeForData(toData);
       myDiagram.select(newnode);
@@ -209,11 +211,10 @@ function addNodeAndLink(e, obj, type) {
         newnode,
         p
       );
-      // then account for any overlap
-      //shiftNodesToEmptySpaces();
       myDiagram.commitTransaction("addSerie");
 
       break;
+
     case "paralel":
       myDiagram.startTransaction("addSerie");
 
