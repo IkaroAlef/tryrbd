@@ -8,6 +8,7 @@ function initDiagram() {
   var GO = go.GraphObject.make;
   myDiagram = GO(go.Diagram, "myDiagramDiv", {
     "undoManager.isEnabled": true,
+    allowMove: false,
   });
 
   var myModel = GO(go.GraphLinksModel);
@@ -52,7 +53,6 @@ function initDiagram() {
   );
 
   myDiagram.addDiagramListener("ChangedSelection", hideInspector);
-  myDiagram.isReadOnly = true;
 
   blockTemplate.contextMenu = GO(
     "ContextMenu",
