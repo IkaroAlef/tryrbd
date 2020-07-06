@@ -33,34 +33,12 @@
     style="display: inline-block; vertical-align: top; padding: 5px; top: 20px; left: 380px;">
     <div id="infoDraggableHandle" class="handle">Info</div>
     <div>
-      <div id="myInfo"></div>
+      <div id="DataInspector"></div>
     </div>
   </div>
 
   <div style="position: relative;">
     <div id="myDiagramDiv" style="width:800px; height:400px; background-color: #DAE4E4;"></div>
-    <ul id="contextMenu" class="menu">
-      <li id="cut" class="menu-item" onclick="cxcommand(event)">Cortar</li>
-      <li id="copy" class="menu-item" onclick="cxcommand(event)">Copiar</li>
-      <li id="paste" class="menu-item" onclick="cxcommand(event)">Colar</li>
-      <li id="delete" class="menu-item" onclick="cxcommand(event)">Deletar</li>
-      <li id="add" class="menu-item" onclick="cxcommand(event)">Inserir bloco
-        <ul class="menu">
-          <li class="menu-item" style="background-color: #f38181;" onclick="addNodeAndLink('serie')">em Série
-          </li>
-          <li class="menu-item" style="background-color: #eaffd0;" onclick="addNodeAndLink('paralel')">em
-            Paralelo</li>
-        </ul>
-      </li>
-      <li id="color" class="menu-item">Color
-        <ul class="menu">
-          <li class="menu-item" style="background-color: #f38181;" onclick="cxcommand(event, 'color')">Red</li>
-          <li class="menu-item" style="background-color: #eaffd0;" onclick="cxcommand(event, 'color')">Green</li>
-          <li class="menu-item" style="background-color: #95e1d3;" onclick="cxcommand(event, 'color')">Blue</li>
-          <li class="menu-item" style="background-color: #fce38a;" onclick="cxcommand(event, 'color')">Yellow</li>
-        </ul>
-      </li>
-    </ul>
   </div>
 
   <script src="js/vendor/modernizr-3.8.0.min.js"></script>

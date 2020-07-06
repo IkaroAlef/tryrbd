@@ -1,3 +1,8 @@
+function createBlock(name, reliability) {
+  var block = { Nome: name, Confiabilidade: reliability };
+  return block;
+}
+
 var myDiagram = null;
 function initDiagram() {
   var GO = go.GraphObject.make;
@@ -5,14 +10,11 @@ function initDiagram() {
     "undoManager.isEnabled": true,
   });
 
-  // This is the actual HTML context menu:
-  var cxElement = document.getElementById("contextMenu");
-
   var myModel = GO(go.GraphLinksModel);
   myModel.nodeDataArray = [
     { key: "Inicio", category: "simple" },
     { key: "Fim", category: "simple" },
-    { key: "1", text: "Alpha", reliability: 0 },
+    { key: "1", Nome: "Alpha", Confiabilidade: 0 },
   ];
   myModel.linkDataArray = [
     { from: "Inicio", to: "1" },
@@ -38,7 +40,7 @@ function initDiagram() {
       go.TextBlock,
       "default text",
       { margin: 5 },
-      new go.Binding("text", "text")
+      new go.Binding("text", "Nome")
     )
   );
 
@@ -48,6 +50,9 @@ function initDiagram() {
     GO(go.Shape),
     GO(go.Shape, { toArrow: "Standard" })
   );
+
+  myDiagram.addDiagramListener("ChangedSelection", hideInspector);
+  myDiagram.isReadOnly = true;
 
   blockTemplate.contextMenu = GO(
     "ContextMenu",
@@ -117,56 +122,19 @@ function initDiagram() {
 
     $("#infoDraggable").draggable({ handle: "#infoDraggableHandle" });
 
-    var inspector = new Inspector("myInfo", myDiagram, {
+    var inspector = new Inspector("DataInspector", myDiagram, {
       properties: {
         // key would be automatically added for nodes, but we want to declare it read-only also:
-        key: { readOnly: true, show: Inspector.showIfPresent },
+        key: { readOnly: true, show: false },
         // fill and stroke would be automatically added for nodes, but we want to declare it a color also:
+
         fill: { show: Inspector.showIfPresent, type: "color" },
         stroke: { show: Inspector.showIfPresent, type: "color" },
       },
     });
   });
-
-  // We don't want the div acting as a context menu to have a (browser) context menu!
-  cxElement.addEventListener(
-    "contextmenu",
-    function (e) {
-      e.preventDefault();
-      return false;
-    },
-    false
-  );
 }
 // end initDiagram
-
-// This is the general menu command handler, parameterized by the name of the command.
-function cxcommand(event, val) {
-  if (val === undefined) val = event.currentTarget.id;
-  var diagram = myDiagram;
-  switch (val) {
-    case "cut":
-      diagram.commandHandler.cutSelection();
-      break;
-    case "copy":
-      diagram.commandHandler.copySelection();
-      break;
-    case "paste":
-      diagram.commandHandler.pasteSelection(
-        diagram.toolManager.contextMenuTool.mouseDownPoint
-      );
-      break;
-    case "delete":
-      diagram.commandHandler.deleteSelection();
-      break;
-    case "color": {
-      var color = window.getComputedStyle(event.target)["background-color"];
-      changeColor(diagram, color);
-      break;
-    }
-  }
-  diagram.currentTool.stopTool();
-}
 
 function addNodeAndLink(e, obj, type) {
   var model = myDiagram.model;
@@ -178,11 +146,7 @@ function addNodeAndLink(e, obj, type) {
 
       var p = fromNode.location.copy();
       p.x += myDiagram.toolManager.draggingTool.gridSnapCellSize.width;
-      var toData = {
-        text: "Bloco",
-        reliability: 0,
-        loc: go.Point.stringify(p),
-      };
+      var toData = createBlock("Bloco", 0);
       model.addNodeData(toData);
 
       var nextNodeKey;
@@ -220,11 +184,7 @@ function addNodeAndLink(e, obj, type) {
 
       var p = fromNode.location.copy();
       p.x += myDiagram.toolManager.draggingTool.gridSnapCellSize.width;
-      var toData = {
-        text: "Bloco",
-        reliability: 0,
-        loc: go.Point.stringify(p),
-      };
+      var toData = createBlock("Bloco", 0);
       model.addNodeData(toData);
 
       var nextNodeKey;
@@ -263,19 +223,11 @@ function addNodeAndLink(e, obj, type) {
   }
 }
 
-// A custom command, for changing the color of the selected node(s).
-function changeColor(diagram, color) {
-  // Always make changes in a transaction, except when initializing the diagram.
-  diagram.startTransaction("change color");
-  diagram.selection.each(function (node) {
-    if (node instanceof go.Node) {
-      // ignore any selected Links and simple Parts
-      // Examine and modify the data, not the Node directly.
-      var data = node.data;
-      // Call setDataProperty to support undo/redo as well as
-      // automatically evaluating any relevant bindings.
-      diagram.model.setDataProperty(data, "color", color);
-    }
-  });
-  diagram.commitTransaction("change color");
+function hideInspector(e) {
+  var sel = myDiagram.selection.first();
+  if (sel == null || sel.data.category == "simple") {
+    document.getElementById("infoDraggable").style.visibility = "hidden";
+  } else {
+    document.getElementById("infoDraggable").style.visibility = "visible";
+  }
 }
