@@ -231,3 +231,17 @@ function hideInspector(e) {
     document.getElementById("infoDraggable").style.visibility = "visible";
   }
 }
+
+function calcReliability() {
+  myDiagram.clearSelection();
+  var totalReliability = 1;
+  myDiagram.nodes.each(function (n) {
+    //if (n.data.text ... && n.data.key ...) { ... do something ... }
+
+    if (n.data.category != "simple") {
+      totalReliability *= n.data.Confiabilidade;
+    }
+  });
+  totalReliability = totalReliability / 100;
+  console.log("total= ", totalReliability, "%");
+}
