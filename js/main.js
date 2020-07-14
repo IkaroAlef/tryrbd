@@ -9,6 +9,11 @@ function initDiagram() {
   myDiagram = GO(go.Diagram, "myDiagramDiv", {
     "undoManager.isEnabled": true,
     allowMove: false,
+    layout: GO(go.TreeLayout, {
+      layerSpacing: 35,
+      alignment: go.TreeLayout.AlignmentCenterChildren,
+      compaction: go.TreeLayout.CompactionNone,
+    }),
   });
 
   var myModel = GO(go.GraphLinksModel);
@@ -22,7 +27,6 @@ function initDiagram() {
     { from: "1", to: "Fim" },
   ];
 
-  myDiagram.layout = GO(go.TreeLayout, { layerSpacing: 35 });
   myDiagram.model = myModel;
 
   var blockTemplate = GO(
@@ -151,30 +155,30 @@ function addNodeAndLink(e, obj, type) {
 
       var nextNodeKey;
       var it = myDiagram.findLinksByExample({ from: fromNode.key });
+      var addedLink = false;
+      console.log(it.count);
       while (it.next()) {
+        console.log(it.value.data);
         nextNodeKey = it.value.data.to;
         model.removeLinkData(it.value.data);
-      }
-      //console.log(fromNode.key);
 
-      var linkdata = {
-        from: model.getKeyForNodeData(fromData),
-        to: model.getKeyForNodeData(toData),
-      };
-      var linknext = {
-        from: model.getKeyForNodeData(toData),
-        to: nextNodeKey,
-      };
-      model.addLinkData(linkdata);
-      model.addLinkData(linknext);
-      // select the new Node
-      var newnode = myDiagram.findNodeForData(toData);
-      myDiagram.select(newnode);
-      // snap the new node to a valid location
-      newnode.location = myDiagram.toolManager.draggingTool.computeMove(
-        newnode,
-        p
-      );
+        //console.log(fromNode.key);
+
+        var linkdata = {
+          from: model.getKeyForNodeData(fromData),
+          to: model.getKeyForNodeData(toData),
+        };
+        var linknext = {
+          from: model.getKeyForNodeData(toData),
+          to: nextNodeKey,
+        };
+        if (!addedLink) {
+          //evitar linkar duas vezes quando o proximo link é em paralelo
+          model.addLinkData(linkdata);
+          addedLink = true;
+        }
+        model.addLinkData(linknext);
+      }
       myDiagram.commitTransaction("addSerie");
 
       break;
