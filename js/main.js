@@ -11,8 +11,7 @@ function initDiagram() {
     allowMove: false,
     layout: GO(go.TreeLayout, {
       layerSpacing: 35,
-      alignment: go.TreeLayout.AlignmentCenterChildren,
-      compaction: go.TreeLayout.CompactionNone,
+      //layeringOption: go.LayeredDigraphLayout.LayerLongestPathSource,
     }),
   });
 
@@ -29,29 +28,59 @@ function initDiagram() {
 
   myDiagram.model = myModel;
 
+  var simpleTemplate = GO(
+    go.Node,
+    "Vertical",
+    GO(
+      go.Panel,
+      "Auto",
+      GO(
+        go.Shape,
+        "RoundedRectangle",
+        {
+          fill: "transparent",
+          stroke: "transparent",
+          portId: "",
+          fromSpot: go.Spot.Right, // port properties go on the port!
+          toSpot: go.Spot.Left,
+        },
+        { width: 50, height: 40 }
+      ),
+
+      GO(go.TextBlock, new go.Binding("text", "key"))
+    ),
+    GO(go.TextBlock, { margin: 4 })
+  );
+
   var blockTemplate = GO(
     go.Node,
     "Vertical",
     { locationSpot: go.Spot.Center },
-    new go.Binding("location", "loc"),
     GO(
       go.Shape,
       "RoundedRectangle",
+      {
+        portId: "",
+        fromSpot: go.Spot.Right, // port properties go on the port!
+        toSpot: go.Spot.Left,
+      },
+
       { width: 80, height: 40 },
       new go.Binding("figure", "fig"),
       new go.Binding("fill", "color")
     ),
-    GO(
-      go.TextBlock,
-      "default text",
-      { margin: 5 },
-      new go.Binding("text", "Nome")
-    )
+    GO(go.TextBlock, { margin: 4 }, new go.Binding("text", "Nome"))
   );
+
+  myDiagram.toolManager.draggingTool.gridSnapCellSize = new go.Size(20, 20);
 
   myDiagram.linkTemplate = GO(
     go.Link,
-    { routing: go.Link.AvoidsNodes, corner: 10 }, // rounded corners
+    {
+      fromSpot: go.Spot.Right,
+      toSpot: go.Spot.Left,
+      routing: go.Link.AvoidsNodes,
+    }, // rounded corners
     GO(go.Shape),
     GO(go.Shape, { toArrow: "Standard" })
   );
@@ -99,12 +128,6 @@ function initDiagram() {
         return o.diagram && o.diagram.commandHandler.canDeleteSelection();
       }).ofObject()
     )
-  );
-
-  var simpleTemplate = GO(
-    go.Node,
-    "Auto",
-    GO(go.TextBlock, new go.Binding("text", "key"))
   );
 
   var templMap = new go.Map();
