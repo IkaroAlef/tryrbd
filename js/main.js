@@ -1,5 +1,10 @@
 function createBlock(name, reliability) {
-  var block = { Nome: name, Confiabilidade: reliability };
+  var block = { Nome: name, Confiabilidade: reliability, category: "block" };
+  return block;
+}
+
+function createKOutOfN() {
+  var block = {};
   return block;
 }
 
@@ -19,7 +24,7 @@ function initDiagram() {
   myModel.nodeDataArray = [
     { key: "Inicio", category: "simple" },
     { key: "Fim", category: "simple" },
-    { key: "1", Nome: "Alpha", Confiabilidade: 0 },
+    { key: "1", Nome: "Alpha", Confiabilidade: 0, category: "block" },
   ];
   myModel.linkDataArray = [
     { from: "Inicio", to: "1" },
@@ -46,7 +51,6 @@ function initDiagram() {
         },
         { width: 50, height: 40 }
       ),
-
       GO(go.TextBlock, new go.Binding("text", "key"))
     ),
     GO(go.TextBlock, { margin: 4 })
@@ -64,12 +68,33 @@ function initDiagram() {
         fromSpot: go.Spot.Right, // port properties go on the port!
         toSpot: go.Spot.Left,
       },
-
-      { width: 80, height: 40 },
-      new go.Binding("figure", "fig"),
-      new go.Binding("fill", "color")
+      { width: 80, height: 40 }
     ),
     GO(go.TextBlock, { margin: 4 }, new go.Binding("text", "Nome"))
+  );
+
+  var kOutOfNTemplate = GO(
+    go.Node,
+    "Vertical",
+    { locationSpot: go.Spot.Center },
+    GO(
+      go.Shape,
+      "Circle",
+      {
+        portId: "",
+        fromSpot: go.Spot.Right, // port properties go on the port!
+        toSpot: go.Spot.Left,
+      },
+
+      { width: 40, height: 40 }
+    ),
+    GO(
+      go.TextBlock,
+      { margin: 4 },
+      new go.Binding("text", "", function (data) {
+        return data.K + "/" + data.N;
+      })
+    )
   );
 
   myDiagram.toolManager.draggingTool.gridSnapCellSize = new go.Size(20, 20);
@@ -99,6 +124,11 @@ function initDiagram() {
         addNodeAndLink(e, obj, "paralel");
       },
     }),
+    GO("ContextMenuButton", GO(go.TextBlock, "Adicionar Bloco K-out-of-n"), {
+      click: function (e, obj) {
+        addNodeAndLink(e, obj, "koutofn");
+      },
+    }),
     GO("ContextMenuButton", GO(go.TextBlock, "Copiar"), {
       click: function (e, obj) {
         e.diagram.commandHandler.copySelection();
@@ -124,7 +154,7 @@ function initDiagram() {
           e.diagram.commandHandler.deleteSelection();
         },
       },
-      new go.Binding("visible", "", function (o) {
+      new go.Binding("visible", "true", function (o) {
         return o.diagram && o.diagram.commandHandler.canDeleteSelection();
       }).ofObject()
     )
@@ -133,7 +163,8 @@ function initDiagram() {
   var templMap = new go.Map();
 
   templMap.add("simple", simpleTemplate);
-  templMap.add("", blockTemplate);
+  templMap.add("block", blockTemplate);
+  templMap.add("kOutOfN", kOutOfNTemplate);
 
   myDiagram.nodeTemplateMap = templMap;
 
@@ -153,6 +184,7 @@ function initDiagram() {
       properties: {
         // key would be automatically added for nodes, but we want to declare it read-only also:
         key: { readOnly: true, show: false },
+        category: { readOnly: true, show: false },
         // fill and stroke would be automatically added for nodes, but we want to declare it a color also:
 
         fill: { show: Inspector.showIfPresent, type: "color" },
@@ -179,7 +211,7 @@ function addNodeAndLink(e, obj, type) {
       var nextNodeKey;
       var it = myDiagram.findLinksByExample({ from: fromNode.key });
       var addedLink = false;
-      console.log(it.count);
+      //console.log(it.count);
       while (it.next()) {
         console.log(it.value.data);
         nextNodeKey = it.value.data.to;
@@ -246,6 +278,42 @@ function addNodeAndLink(e, obj, type) {
       // then account for any overlap
       //shiftNodesToEmptySpaces();
       myDiagram.commitTransaction("addSerie");
+      break;
+
+    case "koutofn":
+      myDiagram.startTransaction("addKOutOfN");
+
+      var toData = { category: "kOutOfN", K: 1, N: 2 };
+      model.addNodeData(toData);
+
+      var nextNodeKey;
+      var it = myDiagram.findLinksByExample({ from: fromNode.key });
+      var addedLink = false;
+
+      while (it.next()) {
+        console.log(it.value.data);
+        nextNodeKey = it.value.data.to;
+        model.removeLinkData(it.value.data);
+
+        //console.log(fromNode.key);
+
+        var linkdata = {
+          from: model.getKeyForNodeData(fromData),
+          to: model.getKeyForNodeData(toData),
+        };
+        var linknext = {
+          from: model.getKeyForNodeData(toData),
+          to: nextNodeKey,
+        };
+        if (!addedLink) {
+          //evitar linkar duas vezes quando o proximo link é em paralelo
+          model.addLinkData(linkdata);
+          addedLink = true;
+        }
+        model.addLinkData(linknext);
+      }
+
+      myDiagram.commitTransaction("addKOutOfN");
       break;
   }
 }
