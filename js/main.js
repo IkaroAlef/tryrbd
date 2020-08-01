@@ -8,6 +8,11 @@ function createKOutOfN() {
   return block;
 }
 
+x0p.setDefault({
+  buttonTextConfirm: "Confirmar",
+  buttonTextCancel: "Cancelar",
+});
+
 var myDiagram = null;
 function initDiagram() {
   var GO = go.GraphObject.make;
@@ -116,7 +121,26 @@ function initDiagram() {
     "ContextMenu",
     GO("ContextMenuButton", GO(go.TextBlock, "Adicionar Bloco em série"), {
       click: function (e, obj) {
-        addNodeAndLink(e, obj, "serie");
+        let isValid = false;
+        x0p({
+          title: "Quantos blocos?",
+          type: "warning",
+          inputType: "text",
+          inputPlaceholder: "Digite um número maior que 0",
+          inputColor: "#F29F3F",
+          inputPromise: function (button, value) {
+            var p = new Promise(function (resolve, reject) {
+              if (value == "" || isNaN(value) || value <= 0)
+                resolve("Digite um número maior que 0.");
+              resolve(null);
+            });
+            return p;
+          },
+        }).then(function (data) {
+          if (data.button == "warning") {
+            addNodeAndLink(e, obj, "serie");
+          }
+        });
       },
     }),
     GO("ContextMenuButton", GO(go.TextBlock, "Adicionar Bloco em paralelo"), {
@@ -172,7 +196,6 @@ function initDiagram() {
     $("#paletteDraggable")
       .draggable({ handle: "#paletteDraggableHandle" })
       .resizable({
-        // After resizing, perform another layout to fit everything in the palette's viewport
         stop: function () {
           myPalette.layoutDiagram(true);
         },
@@ -213,7 +236,7 @@ function addNodeAndLink(e, obj, type) {
       var addedLink = false;
       //console.log(it.count);
       while (it.next()) {
-        console.log(it.value.data);
+        //console.log(it.value.data);
         nextNodeKey = it.value.data.to;
         model.removeLinkData(it.value.data);
 
