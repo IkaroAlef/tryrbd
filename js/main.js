@@ -121,7 +121,8 @@ function initDiagram() {
     "ContextMenu",
     GO("ContextMenuButton", GO(go.TextBlock, "Adicionar Bloco em série"), {
       click: function (e, obj) {
-        let isValid = false;
+        let location = obj.part.location.copy();
+        let partData = obj.part.data;
         x0p({
           title: "Quantos blocos?",
           type: "warning",
@@ -136,21 +137,49 @@ function initDiagram() {
             });
             return p;
           },
-        }).then(function (data) {
-          if (data.button == "warning") {
-            addNodeAndLink(e, obj, "serie");
-          }
-        });
+        }).then(handleUserPrompt.bind(null, e, partData, location, "serie"));
       },
     }),
     GO("ContextMenuButton", GO(go.TextBlock, "Adicionar Bloco em paralelo"), {
       click: function (e, obj) {
-        addNodeAndLink(e, obj, "paralel");
+        let location = obj.part.location.copy();
+        let partData = obj.part.data;
+        x0p({
+          title: "Quantos blocos?",
+          type: "warning",
+          inputType: "text",
+          inputPlaceholder: "Digite um número maior que 0",
+          inputColor: "#F29F3F",
+          inputPromise: function (button, value) {
+            var p = new Promise(function (resolve, reject) {
+              if (value == "" || isNaN(value) || value <= 0)
+                resolve("Digite um número maior que 0.");
+              resolve(null);
+            });
+            return p;
+          },
+        }).then(handleUserPrompt.bind(null, e, partData, location, "paralel"));
       },
     }),
     GO("ContextMenuButton", GO(go.TextBlock, "Adicionar Bloco K-out-of-n"), {
       click: function (e, obj) {
-        addNodeAndLink(e, obj, "koutofn");
+        let location = obj.part.location.copy();
+        let partData = obj.part.data;
+        x0p({
+          title: "Quantos blocos?",
+          type: "warning",
+          inputType: "text",
+          inputPlaceholder: "Digite um número maior que 0",
+          inputColor: "#F29F3F",
+          inputPromise: function (button, value) {
+            var p = new Promise(function (resolve, reject) {
+              if (value == "" || isNaN(value) || value <= 0)
+                resolve("Digite um número maior que 0.");
+              resolve(null);
+            });
+            return p;
+          },
+        }).then(handleUserPrompt.bind(null, e, partData, location, "koutofn"));
       },
     }),
     GO("ContextMenuButton", GO(go.TextBlock, "Copiar"), {
@@ -218,29 +247,24 @@ function initDiagram() {
 }
 // end initDiagram
 
-function addNodeAndLink(e, obj, type) {
+function addNodeAndLink(e, obj, location, type) {
   var model = myDiagram.model;
-  var fromNode = obj.part;
-  var fromData = fromNode.data;
+  var fromData = obj;
   switch (type) {
     case "serie":
       myDiagram.startTransaction("addSerie");
 
-      var p = fromNode.location.copy();
-      p.x += myDiagram.toolManager.draggingTool.gridSnapCellSize.width;
+      //var p = location;
+      //p.x += myDiagram.toolManager.draggingTool.gridSnapCellSize.width;
       var toData = createBlock("Bloco", 0);
       model.addNodeData(toData);
 
       var nextNodeKey;
-      var it = myDiagram.findLinksByExample({ from: fromNode.key });
+      var it = myDiagram.findLinksByExample({ from: fromData.key });
       var addedLink = false;
-      //console.log(it.count);
       while (it.next()) {
-        //console.log(it.value.data);
         nextNodeKey = it.value.data.to;
         model.removeLinkData(it.value.data);
-
-        //console.log(fromNode.key);
 
         var linkdata = {
           from: model.getKeyForNodeData(fromData),
@@ -264,20 +288,17 @@ function addNodeAndLink(e, obj, type) {
     case "paralel":
       myDiagram.startTransaction("addSerie");
 
-      var p = fromNode.location.copy();
-      p.x += myDiagram.toolManager.draggingTool.gridSnapCellSize.width;
       var toData = createBlock("Bloco", 0);
       model.addNodeData(toData);
 
       var nextNodeKey;
       var prevNodeKey;
-      var itFrom = myDiagram.findLinksByExample({ from: fromNode.key });
-      var itTo = myDiagram.findLinksByExample({ to: fromNode.key });
+      var itFrom = myDiagram.findLinksByExample({ from: fromData.key });
+      var itTo = myDiagram.findLinksByExample({ to: fromData.key });
 
       while (itFrom.next()) nextNodeKey = itFrom.value.data.to;
 
       while (itTo.next()) prevNodeKey = itTo.value.data.from;
-      //console.log(fromNode.key);
 
       var linkdata = {
         from: prevNodeKey,
@@ -293,13 +314,6 @@ function addNodeAndLink(e, obj, type) {
       // select the new Node
       var newnode = myDiagram.findNodeForData(toData);
       myDiagram.select(newnode);
-      // snap the new node to a valid location
-      newnode.location = myDiagram.toolManager.draggingTool.computeMove(
-        newnode,
-        p
-      );
-      // then account for any overlap
-      //shiftNodesToEmptySpaces();
       myDiagram.commitTransaction("addSerie");
       break;
 
@@ -310,15 +324,12 @@ function addNodeAndLink(e, obj, type) {
       model.addNodeData(toData);
 
       var nextNodeKey;
-      var it = myDiagram.findLinksByExample({ from: fromNode.key });
+      var it = myDiagram.findLinksByExample({ from: fromData.key });
       var addedLink = false;
 
       while (it.next()) {
-        console.log(it.value.data);
         nextNodeKey = it.value.data.to;
         model.removeLinkData(it.value.data);
-
-        //console.log(fromNode.key);
 
         var linkdata = {
           from: model.getKeyForNodeData(fromData),
@@ -348,6 +359,13 @@ function hideInspector(e) {
   } else {
     document.getElementById("infoDraggable").style.visibility = "visible";
   }
+}
+
+function handleUserPrompt(e, obj, location, type, data) {
+  // o parametro data vem da promise onde a função é chamada
+  // ele é usado para recuperar dados do prompt ao usuário
+  // TODO incluir data.text que é
+  if (data.button === "warning") addNodeAndLink(e, obj, location, type);
 }
 
 function calcReliability() {
