@@ -247,74 +247,78 @@ function initDiagram() {
 }
 // end initDiagram
 
-function addNodeAndLink(e, obj, location, type) {
+function addNodeAndLink(e, obj, location, type, qtd) {
   var model = myDiagram.model;
   var fromData = obj;
   switch (type) {
     case "serie":
-      myDiagram.startTransaction("addSerie");
+      for (var i = 0; i < qtd; i++) {
+        myDiagram.startTransaction("addSerie");
 
-      //var p = location;
-      //p.x += myDiagram.toolManager.draggingTool.gridSnapCellSize.width;
-      var toData = createBlock("Bloco", 0);
-      model.addNodeData(toData);
+        //var p = location;
+        //p.x += myDiagram.toolManager.draggingTool.gridSnapCellSize.width;
+        var toData = createBlock("Bloco", 0);
+        model.addNodeData(toData);
 
-      var nextNodeKey;
-      var it = myDiagram.findLinksByExample({ from: fromData.key });
-      var addedLink = false;
-      while (it.next()) {
-        nextNodeKey = it.value.data.to;
-        model.removeLinkData(it.value.data);
+        var nextNodeKey;
+        var it = myDiagram.findLinksByExample({ from: fromData.key });
+        var addedLink = false;
+        while (it.next()) {
+          nextNodeKey = it.value.data.to;
+          model.removeLinkData(it.value.data);
+
+          var linkdata = {
+            from: model.getKeyForNodeData(fromData),
+            to: model.getKeyForNodeData(toData),
+          };
+          var linknext = {
+            from: model.getKeyForNodeData(toData),
+            to: nextNodeKey,
+          };
+          if (!addedLink) {
+            //evitar linkar duas vezes quando o proximo link é em paralelo
+            model.addLinkData(linkdata);
+            addedLink = true;
+          }
+          model.addLinkData(linknext);
+        }
+        myDiagram.commitTransaction("addSerie");
+      }
+
+      break;
+
+    case "paralel":
+      for (var i = 0; i < qtd; i++) {
+        myDiagram.startTransaction("addSerie");
+
+        var toData = createBlock("Bloco", 0);
+        model.addNodeData(toData);
+
+        var nextNodeKey;
+        var prevNodeKey;
+        var itFrom = myDiagram.findLinksByExample({ from: fromData.key });
+        var itTo = myDiagram.findLinksByExample({ to: fromData.key });
+
+        while (itFrom.next()) nextNodeKey = itFrom.value.data.to;
+
+        while (itTo.next()) prevNodeKey = itTo.value.data.from;
 
         var linkdata = {
-          from: model.getKeyForNodeData(fromData),
+          from: prevNodeKey,
           to: model.getKeyForNodeData(toData),
         };
         var linknext = {
           from: model.getKeyForNodeData(toData),
           to: nextNodeKey,
         };
-        if (!addedLink) {
-          //evitar linkar duas vezes quando o proximo link é em paralelo
-          model.addLinkData(linkdata);
-          addedLink = true;
-        }
+        model.addLinkData(linkdata);
         model.addLinkData(linknext);
+
+        // select the new Node
+        var newnode = myDiagram.findNodeForData(toData);
+        myDiagram.select(newnode);
+        myDiagram.commitTransaction("addSerie");
       }
-      myDiagram.commitTransaction("addSerie");
-
-      break;
-
-    case "paralel":
-      myDiagram.startTransaction("addSerie");
-
-      var toData = createBlock("Bloco", 0);
-      model.addNodeData(toData);
-
-      var nextNodeKey;
-      var prevNodeKey;
-      var itFrom = myDiagram.findLinksByExample({ from: fromData.key });
-      var itTo = myDiagram.findLinksByExample({ to: fromData.key });
-
-      while (itFrom.next()) nextNodeKey = itFrom.value.data.to;
-
-      while (itTo.next()) prevNodeKey = itTo.value.data.from;
-
-      var linkdata = {
-        from: prevNodeKey,
-        to: model.getKeyForNodeData(toData),
-      };
-      var linknext = {
-        from: model.getKeyForNodeData(toData),
-        to: nextNodeKey,
-      };
-      model.addLinkData(linkdata);
-      model.addLinkData(linknext);
-
-      // select the new Node
-      var newnode = myDiagram.findNodeForData(toData);
-      myDiagram.select(newnode);
-      myDiagram.commitTransaction("addSerie");
       break;
 
     case "koutofn":
@@ -365,7 +369,10 @@ function handleUserPrompt(e, obj, location, type, data) {
   // o parametro data vem da promise onde a função é chamada
   // ele é usado para recuperar dados do prompt ao usuário
   // TODO incluir data.text que é
-  if (data.button === "warning") addNodeAndLink(e, obj, location, type);
+  if (data.button === "warning") {
+    qtd = parseInt(data.text);
+    addNodeAndLink(e, obj, location, type, qtd);
+  }
 }
 
 function calcReliability() {
