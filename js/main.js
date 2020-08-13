@@ -1,5 +1,10 @@
-function createBlock(name, reliability) {
-  var block = { Nome: name, Confiabilidade: reliability, category: "block" };
+function createBlock(name, reliability, group) {
+  var block = {
+    Nome: name,
+    Confiabilidade: reliability,
+    category: "block",
+    group: group,
+  };
   return block;
 }
 
@@ -13,16 +18,19 @@ x0p.setDefault({
   buttonTextCancel: "Cancelar",
 });
 
+var groupKeyCounter = 0;
+function groupKey() {
+  groupKeyCounter--;
+  return groupKeyCounter;
+}
+
 var myDiagram = null;
 function initDiagram() {
   var GO = go.GraphObject.make;
   myDiagram = GO(go.Diagram, "myDiagramDiv", {
     "undoManager.isEnabled": true,
     allowMove: false,
-    layout: GO(go.TreeLayout, {
-      layerSpacing: 35,
-      //layeringOption: go.LayeredDigraphLayout.LayerLongestPathSource,
-    }),
+    layout: GO(go.TreeLayout, { layerSpacing: 20 }),
   });
 
   var myModel = GO(go.GraphLinksModel);
@@ -40,59 +48,46 @@ function initDiagram() {
 
   var simpleTemplate = GO(
     go.Node,
-    "Vertical",
-    GO(
-      go.Panel,
-      "Auto",
-      GO(
-        go.Shape,
-        "RoundedRectangle",
-        {
-          fill: "transparent",
-          stroke: "transparent",
-          portId: "",
-          fromSpot: go.Spot.Right, // port properties go on the port!
-          toSpot: go.Spot.Left,
-        },
-        { width: 50, height: 40 }
-      ),
-      GO(go.TextBlock, new go.Binding("text", "key"))
-    ),
-    GO(go.TextBlock, { margin: 4 })
+    "Spot",
+    { selectable: false },
+    GO(go.TextBlock, new go.Binding("text", "key"), { margin: 5 })
   );
 
   var blockTemplate = GO(
     go.Node,
     "Vertical",
-    { locationSpot: go.Spot.Center },
+    GO(go.TextBlock, { margin: 5 }), //used for equilibrate node height with the textblock of Nome
     GO(
-      go.Shape,
-      "RoundedRectangle",
-      {
-        portId: "",
-        fromSpot: go.Spot.Right, // port properties go on the port!
-        toSpot: go.Spot.Left,
-      },
-      { width: 80, height: 40 }
+      go.Panel,
+      "Spot",
+      GO(
+        go.Shape,
+        "RoundedRectangle",
+        { portId: "" },
+        { width: 80, height: 40 }
+      ),
+
+      GO(go.Shape, "LineH", {
+        alignment: go.Spot.Left,
+        alignmentFocus: go.Spot.Right,
+        width: 20,
+        height: 0,
+      }),
+      GO(go.Shape, "LineH", {
+        alignment: go.Spot.Right,
+        alignmentFocus: go.Spot.Left,
+        width: 20,
+        height: 0,
+      })
     ),
-    GO(go.TextBlock, { margin: 4 }, new go.Binding("text", "Nome"))
+    GO(go.TextBlock, { margin: 5 }, new go.Binding("text", "Nome"))
   );
 
   var kOutOfNTemplate = GO(
     go.Node,
     "Vertical",
     { locationSpot: go.Spot.Center },
-    GO(
-      go.Shape,
-      "Circle",
-      {
-        portId: "",
-        fromSpot: go.Spot.Right, // port properties go on the port!
-        toSpot: go.Spot.Left,
-      },
-
-      { width: 40, height: 40 }
-    ),
+    GO(go.Shape, "Circle", { portId: "" }, { width: 40, height: 40 }),
     GO(
       go.TextBlock,
       { margin: 4 },
@@ -106,13 +101,22 @@ function initDiagram() {
 
   myDiagram.linkTemplate = GO(
     go.Link,
+    { selectable: false, routing: go.Link.Orthogonal },
+    GO(go.Shape)
+  );
+
+  myDiagram.groupTemplate = GO(
+    go.Group,
+    "Auto",
     {
-      fromSpot: go.Spot.Right,
-      toSpot: go.Spot.Left,
-      routing: go.Link.AvoidsNodes,
-    }, // rounded corners
-    GO(go.Shape),
-    GO(go.Shape, { toArrow: "Standard" })
+      selectable: false,
+      layout: GO(go.GridLayout, {
+        wrappingColumn: 1,
+        cellSize: new go.Size(1, 1),
+      }),
+    },
+    GO(go.Shape, { fill: "transparent" }), // draws vertical segments as if links connecting each node
+    GO(go.Placeholder, { padding: new go.Margin(-44, 0, -44, 0) }) // half the node height
   );
 
   myDiagram.addDiagramListener("ChangedSelection", hideInspector);
@@ -158,7 +162,7 @@ function initDiagram() {
             });
             return p;
           },
-        }).then(handleUserPrompt.bind(null, e, partData, location, "paralel"));
+        }).then(handleUserPrompt.bind(null, e, partData, location, "parallel"));
       },
     }),
     GO("ContextMenuButton", GO(go.TextBlock, "Adicionar Bloco K-out-of-n"), {
@@ -234,9 +238,9 @@ function initDiagram() {
 
     var inspector = new Inspector("DataInspector", myDiagram, {
       properties: {
-        // key would be automatically added for nodes, but we want to declare it read-only also:
-        key: { readOnly: true, show: false },
-        category: { readOnly: true, show: false },
+        key: { show: false },
+        category: { show: false },
+        group: { show: false },
         // fill and stroke would be automatically added for nodes, but we want to declare it a color also:
 
         fill: { show: Inspector.showIfPresent, type: "color" },
@@ -287,37 +291,51 @@ function addNodeAndLink(e, obj, location, type, qtd) {
 
       break;
 
-    case "paralel":
-      for (var i = 0; i < qtd; i++) {
-        myDiagram.startTransaction("addSerie");
+    case "parallel":
+      const localGroupKey = groupKey();
+      var groupData = { key: localGroupKey, isGroup: true }; //group for new parallel blocks
+      console.log(groupData);
 
-        var toData = createBlock("Bloco", 0);
+      myDiagram.startTransaction("addGroup");
+      model.addNodeData(groupData);
+      model.set(fromData, "group", localGroupKey);
+
+      var nextNodeKey;
+      var prevNodeKey;
+      var itFrom = myDiagram.findLinksByExample({ from: fromData.key });
+      var itTo = myDiagram.findLinksByExample({ to: fromData.key });
+
+      while (itFrom.next()) nextNodeKey = itFrom.value.data.to;
+
+      while (itTo.next()) prevNodeKey = itTo.value.data.from;
+
+      var linkdata = {
+        from: prevNodeKey,
+        to: localGroupKey, //model.getKeyForNodeData(toData),
+      };
+      var linknext = {
+        from: localGroupKey, //model.getKeyForNodeData(toData),
+        to: nextNodeKey,
+      };
+      model.addLinkData(linkdata);
+      model.addLinkData(linknext);
+
+      var node = myDiagram.findNodeForData(fromData);
+      myDiagram.removeParts(node.findLinksConnected());
+      myDiagram.commitTransaction("addGroup");
+
+      for (var i = 0; i < qtd; i++) {
+        myDiagram.startTransaction("addParallel");
+
+        var toData = createBlock("Bloco", 0, localGroupKey);
+        //console.log(toData);
+
         model.addNodeData(toData);
 
-        var nextNodeKey;
-        var prevNodeKey;
-        var itFrom = myDiagram.findLinksByExample({ from: fromData.key });
-        var itTo = myDiagram.findLinksByExample({ to: fromData.key });
-
-        while (itFrom.next()) nextNodeKey = itFrom.value.data.to;
-
-        while (itTo.next()) prevNodeKey = itTo.value.data.from;
-
-        var linkdata = {
-          from: prevNodeKey,
-          to: model.getKeyForNodeData(toData),
-        };
-        var linknext = {
-          from: model.getKeyForNodeData(toData),
-          to: nextNodeKey,
-        };
-        model.addLinkData(linkdata);
-        model.addLinkData(linknext);
-
         // select the new Node
-        var newnode = myDiagram.findNodeForData(toData);
-        myDiagram.select(newnode);
-        myDiagram.commitTransaction("addSerie");
+        //var newnode = myDiagram.findNodeForData(toData);
+        //myDiagram.select(newnode);
+        myDiagram.commitTransaction("addParallel");
       }
       break;
 
