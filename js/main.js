@@ -29,19 +29,27 @@ function initDiagram() {
   var GO = go.GraphObject.make;
   myDiagram = GO(go.Diagram, "myDiagramDiv", {
     "undoManager.isEnabled": true,
-    allowMove: false,
-    layout: GO(go.TreeLayout, { layerSpacing: 20 }),
+    allowMove: true,
+    layout: GO(ParallelLayout, { layerSpacing: 20 }),
   });
 
   var myModel = GO(go.GraphLinksModel);
   myModel.nodeDataArray = [
-    { key: "Inicio", category: "simple" },
-    { key: "Fim", category: "simple" },
-    { key: "1", Nome: "Alpha", Confiabilidade: 0, category: "block" },
+    { key: -1, isGroup: true },
+
+    { key: "Inicio", category: "Split" },
+    { key: "Fim", category: "Merge" },
+    {
+      key: "1",
+      Nome: "Alpha",
+      Confiabilidade: 0,
+      category: "block",
+      group: -1,
+    },
   ];
   myModel.linkDataArray = [
-    { from: "Inicio", to: "1" },
-    { from: "1", to: "Fim" },
+    { from: "Inicio", to: -1 },
+    { from: -1, to: "Fim" },
   ];
 
   myDiagram.model = myModel;
@@ -53,7 +61,7 @@ function initDiagram() {
     GO(go.TextBlock, new go.Binding("text", "key"), { margin: 5 })
   );
 
-  var blockTemplate = GO(
+  var nodeTemplate = GO(
     go.Node,
     "Vertical",
     GO(go.TextBlock, { margin: 5 }), //used for equilibrate node height with the textblock of Nome
@@ -121,7 +129,7 @@ function initDiagram() {
 
   myDiagram.addDiagramListener("ChangedSelection", hideInspector);
 
-  blockTemplate.contextMenu = GO(
+  nodeTemplate.contextMenu = GO(
     "ContextMenu",
     GO("ContextMenuButton", GO(go.TextBlock, "Adicionar Bloco em série"), {
       click: function (e, obj) {
@@ -220,10 +228,42 @@ function initDiagram() {
   var templMap = new go.Map();
 
   templMap.add("simple", simpleTemplate);
-  templMap.add("block", blockTemplate);
+  templMap.add("block", nodeTemplate);
   templMap.add("kOutOfN", kOutOfNTemplate);
 
   myDiagram.nodeTemplateMap = templMap;
+
+  myDiagram.nodeTemplateMap.add(
+    "Split",
+    GO(
+      go.Node,
+      "Auto",
+      { locationSpot: go.Spot.Center },
+      GO(go.Shape, "Diamond", {
+        fill: "deepskyblue",
+        stroke: null,
+        strokeWidth: 0,
+        desiredSize: new go.Size(28, 28),
+      }),
+      GO(go.TextBlock, new go.Binding("text"))
+    )
+  );
+
+  myDiagram.nodeTemplateMap.add(
+    "Merge",
+    GO(
+      go.Node,
+      "Auto",
+      { locationSpot: go.Spot.Center },
+      GO(go.Shape, "Circle", {
+        fill: "deepskyblue",
+        stroke: null,
+        strokeWidth: 0,
+        desiredSize: new go.Size(28, 28),
+      }),
+      GO(go.TextBlock, new go.Binding("text"))
+    )
+  );
 
   $(function () {
     $("#paletteDraggable")
@@ -240,7 +280,7 @@ function initDiagram() {
       properties: {
         key: { show: false },
         category: { show: false },
-        group: { show: false },
+        group: { show: true },
         // fill and stroke would be automatically added for nodes, but we want to declare it a color also:
 
         fill: { show: Inspector.showIfPresent, type: "color" },
@@ -256,18 +296,51 @@ function addNodeAndLink(e, obj, location, type, qtd) {
   var fromData = obj;
   switch (type) {
     case "serie":
-      for (var i = 0; i < qtd; i++) {
-        myDiagram.startTransaction("addSerie");
+      let selectedGroup = fromData.group;
+      let lastAddedGroup;
+      let nextGroupKeyFromSelected;
+      let currentGroup = fromData.group;
 
-        //var p = location;
-        //p.x += myDiagram.toolManager.draggingTool.gridSnapCellSize.width;
-        var toData = createBlock("Bloco", 0);
+      var itFrom = myDiagram.findLinksByExample({ from: selectedGroup });
+      while (itFrom.next()) {
+        //console.log(itFrom.value);
+        nextGroupKeyFromSelected = itFrom.value.data.to;
+      }
+      //console.log(nextGroupKeyFromSelected);
+
+      for (var i = 0; i < qtd; i++) {
+        console.log("currentGroup");
+        console.log(currentGroup);
+        const localGroupKey = groupKey() - 1;
+        lastAddedGroup = localGroupKey;
+
+        //console.log(localGroupKey);
+        var groupData = { key: localGroupKey, isGroup: true }; //group for new block
+        //console.log(groupData);
+
+        myDiagram.startTransaction("addGroup");
+        model.addNodeData(groupData);
+        // model.set(fromData, "group", localGroupKey);
+
+        var linkdata = {
+          from: currentGroup, //previous group
+          to: localGroupKey, //model.getKeyForNodeData(toData),
+        };
+
+        //console.log(linkdata);
+        model.addLinkData(linkdata);
+        //model.addLinkData(linknext);
+
+        //var node = myDiagram.findNodeForData(fromData);
+        //myDiagram.removeParts(node.findLinksConnected());
+
+        var toData = createBlock("Bloco", 0, localGroupKey);
         model.addNodeData(toData);
 
-        var nextNodeKey;
-        var it = myDiagram.findLinksByExample({ from: fromData.key });
-        var addedLink = false;
-        while (it.next()) {
+        //var nextNodeKey;
+        //var it = myDiagram.findLinksByExample({ from: fromData.key });
+        //var addedLink = false;
+        /*while (it.next()) {
           nextNodeKey = it.value.data.to;
           model.removeLinkData(it.value.data);
 
@@ -285,10 +358,30 @@ function addNodeAndLink(e, obj, location, type, qtd) {
             addedLink = true;
           }
           model.addLinkData(linknext);
-        }
-        myDiagram.commitTransaction("addSerie");
+        } */
+        currentGroup = localGroupKey;
+        myDiagram.commitTransaction("addGroup");
       }
 
+      myDiagram.startTransaction("linkLast");
+
+      var oldLink = {
+        //used for delete oldLink on the selected after add in series
+        from: selectedGroup,
+        to: nextGroupKeyFromSelected,
+      };
+      myDiagram.removeParts(myDiagram.findLinksByExample(oldLink));
+
+      var linkLast = {
+        from: lastAddedGroup, //model.getKeyForNodeData(toData),
+        to: nextGroupKeyFromSelected,
+      };
+
+      model.addLinkData(linkLast);
+
+      myDiagram.commitTransaction("linkLast");
+
+      console.log(model.linkDataArray);
       break;
 
     case "parallel":
