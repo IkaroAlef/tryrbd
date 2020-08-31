@@ -385,13 +385,13 @@ function addNodeAndLink(e, obj, location, type, qtd) {
       break;
 
     case "parallel":
-      const localGroupKey = groupKey();
-      var groupData = { key: localGroupKey, isGroup: true }; //group for new parallel blocks
-      console.log(groupData);
+      const localGroupKey = fromData.group;
+      //var groupData = { key: localGroupKey, isGroup: true }; //group for new parallel blocks
+      //console.log(groupData);
 
       myDiagram.startTransaction("addGroup");
-      model.addNodeData(groupData);
-      model.set(fromData, "group", localGroupKey);
+      //model.addNodeData(groupData);
+      //model.set(fromData, "group", localGroupKey);
 
       var nextNodeKey;
       var prevNodeKey;
